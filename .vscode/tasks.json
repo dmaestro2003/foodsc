@@ -1,0 +1,56 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Publish project to GitHub",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"init",
+				"&&",
+				"git",
+				"add",
+				"index.html",
+				"app.js",
+				"styles.css",
+				"README.md",
+				"&&",
+				"git",
+				"commit",
+				"-m",
+				"Publish Chakula Hub demo",
+				"&&",
+				"git",
+				"branch",
+				"-M",
+				"main",
+				"&&",
+				"git",
+				"remote",
+				"add",
+				"origin",
+				"https://github.com/dmaestro2003/foodsc.git",
+				"&&",
+				"git",
+				"push",
+				"-u",
+				"origin",
+				"main"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check Git status",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short",
+				"--branch"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

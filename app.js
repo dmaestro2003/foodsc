@@ -1,0 +1,260 @@
+const foods = [
+  { id: "nyama-choma", name: "Nyama Choma Platter", category: "Local favourites", price: 18500, rating: 4.9, time: 35, popularity: 98, newest: 1, tag: "Bestseller", available: true, description: "Charcoal-grilled beef with kachumbari, pili pili and a side of your choice.", ingredients: "Beef, tomato, red onion, coriander, lime, pili pili", image: "photo-1544025162-d76694265947" },
+  { id: "pilau", name: "Zanzibar Beef Pilau", category: "Local favourites", price: 12500, rating: 4.8, time: 25, popularity: 94, newest: 3, tag: "Local favourite", available: true, description: "Fragrant spiced rice, slow-cooked beef and crisp kachumbari.", ingredients: "Basmati rice, beef, pilau masala, potato, onion", image: "photo-1512058564366-18510be2db19" },
+  { id: "mishkaki", name: "Mishkaki Skewers", category: "Local favourites", price: 9000, rating: 4.7, time: 20, popularity: 87, newest: 4, tag: "Street food", available: true, description: "Tender marinated beef skewers hot from the grill with fresh lime.", ingredients: "Beef, ginger, garlic, paprika, lime", image: "photo-1544025162-d76694265947" },
+  { id: "chips-mayai", name: "Chips Mayai", category: "Local favourites", price: 7500, rating: 4.6, time: 18, popularity: 91, newest: 8, tag: "Comfort food", available: true, description: "Golden fries folded into fluffy eggs, served with kachumbari.", ingredients: "Potato, egg, tomato, onion, coriander", image: "photo-1518013431117-eb1465fa5752" },
+  { id: "grilled-chicken", name: "Pili Pili Chicken", category: "Grills", price: 16000, rating: 4.8, time: 32, popularity: 90, newest: 6, tag: "Spicy", available: true, description: "Juicy flame-grilled chicken with a bright, house-made pili pili glaze.", ingredients: "Chicken, chilli, lime, garlic, herbs", image: "photo-1532550907401-a500c9a57435" },
+  { id: "pizza", name: "Garden Market Pizza", category: "Pizza & burgers", price: 22000, rating: 4.7, time: 30, popularity: 85, newest: 2, tag: "Veggie", available: true, description: "Stone-baked pizza with mozzarella, peppers, mushrooms and basil.", ingredients: "Pizza dough, tomato, mozzarella, mushroom, peppers", image: "photo-1513104890138-7c749659a591" },
+  { id: "burger", name: "Smash Beef Burger", category: "Pizza & burgers", price: 17500, rating: 4.8, time: 22, popularity: 89, newest: 7, tag: "Bestseller", available: true, description: "Double-seared beef, cheddar, pickles and our tangy house sauce.", ingredients: "Beef, cheddar, brioche, lettuce, pickle, house sauce", image: "photo-1568901346375-23c9450c58cd" },
+  { id: "seafood", name: "Coconut Prawn Curry", category: "Seafood", price: 24000, rating: 4.9, time: 28, popularity: 80, newest: 5, tag: "Coastal pick", available: true, description: "Tanzanian coastal-style prawns in a gentle coconut and lime curry.", ingredients: "Prawns, coconut milk, tomato, lime, ginger", image: "photo-1565680018434-b513d5e5fd47" },
+  { id: "veggie-bowl", name: "Market Greens Bowl", category: "Vegetarian", price: 11500, rating: 4.5, time: 15, popularity: 69, newest: 9, tag: "Plant based", available: true, description: "Seasonal greens, avocado, grains and a citrus-ginger dressing.", ingredients: "Greens, avocado, quinoa, cucumber, citrus", image: "photo-1512621776951-a57141f2eefd" },
+  { id: "samosa", name: "Beef Samosa (3 pcs)", category: "Snacks", price: 5500, rating: 4.6, time: 12, popularity: 77, newest: 10, tag: "Snack", available: true, description: "Crisp golden pastry filled with gently spiced minced beef.", ingredients: "Pastry, beef, onion, cumin, coriander", image: "photo-1601050690597-df0568f70950" },
+  { id: "mango-juice", name: "Fresh Mango Juice", category: "Drinks", price: 4500, rating: 4.8, time: 5, popularity: 73, newest: 11, tag: "Fresh daily", available: true, description: "Ripe East African mango blended fresh with a squeeze of lime.", ingredients: "Mango, lime, filtered water", image: "photo-1622597467836-f3285f2131b8" },
+  { id: "mandazi", name: "Coconut Mandazi (2 pcs)", category: "Desserts", price: 4000, rating: 4.6, time: 10, popularity: 61, newest: 12, tag: "Sweet treat", available: true, description: "Soft, lightly spiced coconut doughnuts with a golden edge.", ingredients: "Flour, coconut milk, cardamom, sugar", image: "photo-1587049352846-4a222e784d38" }
+];
+
+const categories = [
+  { name: "Local favourites", label: "Tanzanian", emoji: "🍛" }, { name: "Grills", label: "Grilled", emoji: "🍗" },
+  { name: "Pizza & burgers", label: "Pizza & burgers", emoji: "🍕" }, { name: "Seafood", label: "Seafood", emoji: "🍤" },
+  { name: "Vegetarian", label: "Vegetarian", emoji: "🥑" }, { name: "Desserts", label: "Drinks & treats", emoji: "🥭" }
+];
+const orderStatuses = ["Order Received", "Confirmed", "Preparing", "Ready for Pickup", "Out for Delivery", "Delivered", "Cancelled"];
+const imageUrl = (photo, width = 700) => `https://images.unsplash.com/${photo}?auto=format&fit=crop&w=${width}&q=82`;
+const getStore = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
+const setStore = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+let cart = getStore("ch-cart", []);
+let orders = getStore("ch-orders", []);
+let profile = getStore("ch-profile", null);
+let activeCoupon = getStore("ch-coupon", "");
+let menuFilters = { search: "", category: "", maxPrice: 30000, minRating: 0, available: true, sort: "popular" };
+const app = document.querySelector("#app");
+
+const money = amount => `TZS ${Number(amount).toLocaleString("en-TZ")}`;
+const findFood = id => foods.find(food => food.id === id);
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+const cartCount = () => cart.reduce((sum, item) => sum + item.quantity, 0);
+const cartSubtotal = () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+const deliveryFee = pickup => pickup ? 0 : cartSubtotal() >= 50000 ? 0 : 3500;
+const discountAmount = () => activeCoupon === "KARIBU10" ? Math.round(cartSubtotal() * .1) : 0;
+const route = () => decodeURIComponent(location.hash.slice(1) || "home").split("?")[0];
+const queryParams = () => new URLSearchParams(location.hash.split("?")[1] || "");
+const saveCart = () => { setStore("ch-cart", cart); document.querySelector("#cart-count").textContent = cartCount(); };
+const toast = message => { const item = document.createElement("div"); item.className = "toast"; item.textContent = message; document.querySelector("#toast-region").append(item); setTimeout(() => item.remove(), 2600); };
+const foodCard = food => `<article class="food-card"><a href="#food/${food.id}" aria-label="View ${escapeHtml(food.name)}"><div class="food-image-wrap"><img class="food-card-image" src="${imageUrl(food.image, 600)}" alt="${escapeHtml(food.name)}" loading="lazy"><span class="food-tag">${escapeHtml(food.tag)}</span></div></a><div class="food-card-body"><div class="food-card-top"><h3><a href="#food/${food.id}">${escapeHtml(food.name)}</a></h3><span class="rating">★ ${food.rating}</span></div><p class="food-desc">${escapeHtml(food.description)}</p><div class="food-card-bottom"><div><span class="price">${money(food.price)}</span><br><span class="prep-time">◷ ${food.time} min</span></div><button class="add-button" data-add="${food.id}" aria-label="Add ${escapeHtml(food.name)} to cart">+</button></div></div></article>`;
+const foodGrid = (items, className = "") => items.length ? `<div class="food-grid ${className}">${items.map(foodCard).join("")}</div>` : `<div class="empty-state"><h2>No dishes found</h2><p>Try a different search or adjust your filters.</p><button class="button-primary" data-action="clear-filters">Clear filters</button></div>`;
+const pageStart = content => `<div class="page-shell">${content}</div>`;
+const setTitle = title => { document.title = `${title} | Chakula Hub`; };
+
+function renderHome() {
+  setTitle("Good food, right on time");
+  const popular = [...foods].sort((a, b) => b.popularity - a.popularity).slice(0, 4);
+  return `<section class="hero"><div class="hero-copy"><span class="eyebrow">A little taste of Tanzania</span><h1>Good food,<br>right <em>on time.</em></h1><p>From smoky nyama choma to your new favourite bowl. Find something lovely and we’ll bring it to you.</p><form class="search-panel" id="hero-search"><svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg><label class="sr-only" for="hero-query">Search food</label><input id="hero-query" placeholder="Search dishes, flavours, cravings..."><button>Find my food</button></form><span class="location-line">⌖ Delivering around <strong>Dar es Salaam</strong> <span>·</span> <a href="#contact">Change area</a></span></div><div class="hero-visual"><div class="hero-image-frame"><img class="hero-image" src="${imageUrl("photo-1544025162-d76694265947", 1000)}" alt="Grilled food served fresh" fetchpriority="high"></div><div class="hero-stamp"><strong>Fresh</strong><small>made with care</small></div><div class="floating-note"><span class="note-icon">✦</span><span><strong>A good meal awaits</strong><small>Local favourites, made fresh</small></span></div></div></section>
+  <section class="section section-soft"><div class="section-inner"><div class="section-heading"><div><span class="eyebrow">What sounds good?</span><h2>Find your kind of delicious</h2></div><a class="text-link" href="#menu">All categories ↗</a></div><div class="category-grid">${categories.map(category => `<a class="category-card" href="#menu?category=${encodeURIComponent(category.name)}"><span class="category-emoji">${category.emoji}</span><strong>${category.label}</strong><small>Explore dishes</small></a>`).join("")}</div></div></section>
+  <section class="section"><div class="section-inner"><div class="section-heading"><div><span class="eyebrow">Made for your cravings</span><h2>Today’s crowd-pleasers</h2><p>Good things, cooked fresh and ready when you are.</p></div><a class="text-link" href="#menu">Explore the menu ↗</a></div>${foodGrid(popular)}</div></section>
+  <section class="section section-soft"><div class="section-inner"><div class="offer-band"><div class="offer-copy"><span class="eyebrow">A warm welcome</span><h2>First order? Here’s 10% off.</h2><p>Use code <strong>KARIBU10</strong> at checkout. Demo discount, applied to food subtotal.</p><a class="button-primary" href="#menu">Find a favourite</a></div><img class="offer-image" src="${imageUrl("photo-1512621776951-a57141f2eefd", 900)}" alt="Fresh colourful salad bowl" loading="lazy"></div></div></section>
+  <section class="section"><div class="section-inner"><div class="section-heading"><div><span class="eyebrow">Good people, good food</span><h2>Meet the kitchens</h2><p>A few of the flavours you’ll find on the menu.</p></div></div><div class="restaurant-row"><article class="restaurant"><img src="${imageUrl("photo-1555396273-367ea4eb4db5", 500)}" alt="Warm restaurant kitchen" loading="lazy"><div><h3>Mtaa Kitchen</h3><p>Tanzanian comfort food · Dar es Salaam</p></div></article><article class="restaurant"><img src="${imageUrl("photo-1559339352-11d035aa65de", 500)}" alt="Restaurant dining room" loading="lazy"><div><h3>Pwani Table</h3><p>Coastal flavours · Dar es Salaam</p></div></article><article class="restaurant"><img src="${imageUrl("photo-1552566626-52f8b828add9", 500)}" alt="Modern restaurant interior" loading="lazy"><div><h3>Green Market</h3><p>Fresh & plant-forward · Dar es Salaam</p></div></article></div></div></section>
+  <section class="section section-soft"><div class="section-inner"><div class="section-heading"><div><span class="eyebrow">Simple as that</span><h2>From craving to doorstep</h2></div></div><div class="steps-grid"><article class="step"><span class="step-number">01</span><h3>Pick your plate</h3><p>Browse fresh dishes and choose exactly what you’re in the mood for.</p></article><article class="step"><span class="step-number">02</span><h3>We get cooking</h3><p>Your order goes to the kitchen. Made fresh, packed with care.</p></article><article class="step"><span class="step-number">03</span><h3>Enjoy the good bit</h3><p>Choose delivery or pickup, then tuck in while it’s lovely and warm.</p></article></div></div></section>
+  <section class="section"><div class="section-inner"><div class="quote-band"><blockquote>“A good meal brings everyone to the table. We’re here to make that part a little easier.”</blockquote><cite>THE CHAKULA HUB TEAM<br>Brand story, not a customer review</cite></div></div></section>`;
+}
+
+function filteredFoods() {
+  let items = foods.filter(food => (!menuFilters.category || food.category === menuFilters.category) && food.price <= menuFilters.maxPrice && food.rating >= menuFilters.minRating && (!menuFilters.available || food.available) && `${food.name} ${food.description} ${food.category}`.toLowerCase().includes(menuFilters.search.toLowerCase()));
+  if (menuFilters.sort === "price-low") items.sort((a, b) => a.price - b.price);
+  else if (menuFilters.sort === "price-high") items.sort((a, b) => b.price - a.price);
+  else if (menuFilters.sort === "newest") items.sort((a, b) => a.newest - b.newest);
+  else items.sort((a, b) => b.popularity - a.popularity);
+  return items;
+}
+function renderMenu() {
+  setTitle("Food menu");
+  const requestedCategory = queryParams().get("category");
+  if (requestedCategory && categories.some(category => category.name === requestedCategory)) menuFilters.category = requestedCategory;
+  const items = filteredFoods();
+  return pageStart(`<div class="page-intro"><div class="breadcrumb"><a href="#home">Home</a> / Menu</div><span class="eyebrow">The good stuff</span><h1 class="page-title">Find your next favourite</h1><p>Freshly prepared dishes inspired by Tanzania and further afield. Demo menu items and prices are for illustration.</p></div><div class="menu-layout"><aside class="filters" aria-label="Menu filters"><h2>Filter menu</h2><div class="filter-group"><h3>Categories</h3><label><input type="radio" name="category" value="" ${!menuFilters.category ? "checked" : ""}> All dishes</label>${categories.map(category => `<label><input type="radio" name="category" value="${escapeHtml(category.name)}" ${menuFilters.category === category.name ? "checked" : ""}> ${category.emoji} ${escapeHtml(category.label)}</label>`).join("")}</div><div class="filter-group"><h3>Maximum price</h3><input id="price-filter" type="range" min="5000" max="30000" step="1000" value="${menuFilters.maxPrice}"><div class="filter-value"><span>TZS 5,000</span><strong id="price-filter-label">${money(menuFilters.maxPrice)}</strong></div></div><div class="filter-group"><h3>Rating</h3><label><input type="radio" name="rating" value="0" ${menuFilters.minRating === 0 ? "checked" : ""}> Any rating</label><label><input type="radio" name="rating" value="4.5" ${menuFilters.minRating === 4.5 ? "checked" : ""}> ★ 4.5 and up</label><label><input type="radio" name="rating" value="4.8" ${menuFilters.minRating === 4.8 ? "checked" : ""}> ★ 4.8 and up</label></div><div class="filter-group"><label><input id="availability-filter" type="checkbox" ${menuFilters.available ? "checked" : " off"}> Available now</label></div></aside><section><div class="menu-toolbar"><p><strong>${items.length}</strong> dishes to explore</p><input class="menu-search" id="menu-search" value="${escapeHtml(menuFilters.search)}" placeholder="Search the menu..." aria-label="Search the menu"><label class="sr-only" for="sort-food">Sort menu</label><select id="sort-food"><option value="popular" ${menuFilters.sort === "popular" ? "selected" : ""}>Most popular</option><option value="price-low" ${menuFilters.sort === "price-low" ? "selected" : ""}>Price: low to high</option><option value="price-high" ${menuFilters.sort === "price-high" ? "selected" : ""}>Price: high to low</option><option value="newest" ${menuFilters.sort === "newest" ? "selected" : ""}>Newest first</option></select></div><div id="menu-results">${foodGrid(items, "menu-food-grid")}</div></section></div>`);
+}
+
+function renderDetail(id) {
+  const food = findFood(id);
+  if (!food) return renderNotFound();
+  setTitle(food.name);
+  return pageStart(`<div class="breadcrumb"><a href="#home">Home</a> / <a href="#menu">Menu</a> / ${escapeHtml(food.name)}</div><section class="detail-layout"><img class="detail-image" src="${imageUrl(food.image, 1000)}" alt="${escapeHtml(food.name)}"><div class="detail-info"><span class="eyebrow">${escapeHtml(food.category)}</span><h1>${escapeHtml(food.name)}</h1><div class="detail-meta"><span class="rating">★ ${food.rating} · Demo rating</span><span>◷ ${food.time} min</span><span class="stock">● Available</span></div><p>${escapeHtml(food.description)}</p><p><strong>Ingredients:</strong> ${escapeHtml(food.ingredients)}.</p><div class="detail-price">${money(food.price)}</div><div class="option-block"><h2>Choose a portion</h2><div class="option-options"><label class="choice"><input type="radio" name="portion" value="Regular" checked> Regular</label><label class="choice"><input type="radio" name="portion" value="Large"> Large + TZS 4,000</label></div></div><div class="option-block"><h2>Make it yours</h2><div class="option-options"><label class="choice"><input type="checkbox" name="extra" value="Extra pili pili" data-price="1000"> Extra pili pili +1,000</label><label class="choice"><input type="checkbox" name="extra" value="Avocado" data-price="2500"> Add avocado +2,500</label></div></div><div class="option-block"><label for="special-instructions"><h2>Special instructions</h2></label><textarea id="special-instructions" maxlength="180" placeholder="Anything the kitchen should know? (optional)"></textarea></div><div class="detail-actions"><label class="sr-only" for="detail-quantity">Quantity</label><select class="control" id="detail-quantity"><option>1</option><option>2</option><option>3</option><option>4</option></select><button class="button-primary" data-action="add-detail" data-food="${food.id}">Add to cart · ${money(food.price)}</button></div><p class="form-message">Demo availability. Real stock requires a connected kitchen system.</p></div></section>`);
+}
+
+function addToCart(foodId, options = {}) {
+  const food = findFood(foodId);
+  if (!food || !food.available) return toast("This dish is not available right now.");
+  const item = { key: `${food.id}-${options.portion || "Regular"}-${(options.extras || []).join("_")}`, id: food.id, name: food.name, price: options.price ?? food.price, quantity: options.quantity ?? 1, portion: options.portion || "Regular", extras: options.extras || [], instructions: options.instructions || "", image: food.image };
+  const existing = cart.find(row => row.key === item.key && row.instructions === item.instructions);
+  if (existing) existing.quantity += item.quantity; else cart.push(item);
+  saveCart(); toast(`${food.name} added to your cart.`);
+}
+function renderCart() {
+  setTitle("Your cart");
+  const rows = cart.map(item => `<article class="cart-row"><img src="${imageUrl(item.image, 200)}" alt=""><div><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.portion)}${item.extras.length ? ` · ${escapeHtml(item.extras.join(", "))}` : ""}</p><span class="price cart-price">${money(item.price)}</span><button class="cart-remove" data-remove="${escapeHtml(item.key)}">Remove</button></div><div class="qty-control"><button data-quantity="${escapeHtml(item.key)}" data-delta="-1" aria-label="Decrease quantity">−</button><span>${item.quantity}</span><button data-quantity="${escapeHtml(item.key)}" data-delta="1" aria-label="Increase quantity">+</button></div></article>`).join("");
+  return pageStart(`<div class="page-intro"><div class="breadcrumb"><a href="#home">Home</a> / Cart</div><span class="eyebrow">Almost time to eat</span><h1 class="page-title">Your cart</h1></div>${cart.length ? `<div class="cart-layout"><section class="cart-list">${rows}<a class="text-link" href="#menu">← Keep exploring</a></section><aside class="summary-box"><h2>Order summary</h2><div class="summary-line"><span>Subtotal</span><strong>${money(cartSubtotal())}</strong></div><div class="summary-line"><span>Delivery</span><strong>${cartSubtotal() >= 50000 ? "Free" : money(3500)}</strong></div>${activeCoupon ? `<div class="summary-line"><span>Karibu discount</span><strong>−${money(discountAmount())}</strong></div>` : ""}<div class="promo-row"><label class="sr-only" for="coupon-code">Discount code</label><input id="coupon-code" placeholder="Discount code" value="${escapeHtml(activeCoupon)}"><button data-action="apply-coupon">Apply</button></div><div class="summary-line summary-total"><span>Estimated total</span><strong>${money(cartSubtotal() + deliveryFee(false) - discountAmount())}</strong></div><button class="button-primary" data-action="checkout">Continue to checkout</button><p class="form-message">Delivery is free on food orders over TZS 50,000.</p></aside></div>` : `<div class="empty-state"><h2>Your cart is taking a little break</h2><p>Pick a dish from the menu and we’ll save it here.</p><a class="button-primary" href="#menu">Browse the menu</a></div>`}`);
+}
+
+function renderCheckout() {
+  setTitle("Checkout");
+  if (!cart.length) return `${pageStart(`<div class="empty-state"><h2>Your cart is empty</h2><p>Add a dish before you check out.</p><a class="button-primary" href="#menu">Browse menu</a></div>`)}`;
+  return pageStart(`<div class="page-intro"><div class="breadcrumb"><a href="#cart">Cart</a> / Checkout</div><span class="eyebrow">Nearly there</span><h1 class="page-title">Let’s get it to you</h1><p>Cash on delivery is the only enabled payment in this demo.</p></div><form id="checkout-form" class="checkout-layout"><div><section class="form-section"><h2>Your details</h2><div class="form-grid"><div class="field"><label for="customer-name">Full name *</label><input id="customer-name" name="name" autocomplete="name" required minlength="2" value="${escapeHtml(profile?.name || "")}"></div><div class="field"><label for="customer-phone">Phone number *</label><input id="customer-phone" name="phone" type="tel" autocomplete="tel" pattern="[+0-9 ()-]{9,16}" placeholder="+255 7XX XXX XXX" required value="${escapeHtml(profile?.phone || "")}"></div><div class="field full"><label for="customer-email">Email address</label><input id="customer-email" name="email" type="email" autocomplete="email" value="${escapeHtml(profile?.email || "")}"></div></div></section><section class="form-section"><h2>How would you like your food?</h2><div class="segmented"><label><input type="radio" name="fulfilment" value="delivery" checked> Delivery</label><label><input type="radio" name="fulfilment" value="pickup"> Pickup</label></div><div class="form-grid" id="delivery-fields"><div class="field full"><label for="delivery-address">Delivery address *</label><input id="delivery-address" name="address" autocomplete="street-address" placeholder="Street, area, and a nearby landmark" required></div><div class="field full"><label for="delivery-area">Delivery area *</label><select id="delivery-area" name="area" required><option value="">Choose an area</option><option>Ilala</option><option>Kinondoni</option><option>Temeke</option><option>Ubungo</option><option>Other Dar es Salaam area</option></select></div><div class="field full"><label for="delivery-note">Delivery instructions</label><textarea id="delivery-note" name="instructions" placeholder="Gate, floor, or other helpful details"></textarea></div></div></section><section class="form-section"><h2>Payment</h2><div class="segmented"><label><input type="radio" name="payment" value="Cash on Delivery" checked> Cash on delivery</label><label><input type="radio" name="payment" value="Pickup payment"> Pay at pickup</label></div><p class="payment-note">M-Pesa, Airtel Money, and Tigo Pesa are not connected. No mobile-money payment will be requested or marked as paid.</p></section></div><aside class="summary-box"><h2>Your order</h2>${cart.map(item => `<div class="summary-line"><span>${item.quantity} × ${escapeHtml(item.name)}</span><strong>${money(item.price * item.quantity)}</strong></div>`).join("")}<div class="summary-line"><span>Subtotal</span><strong>${money(cartSubtotal())}</strong></div><div class="summary-line"><span>Delivery</span><strong id="checkout-delivery">${money(deliveryFee(false))}</strong></div>${activeCoupon ? `<div class="summary-line"><span>Karibu discount</span><strong>−${money(discountAmount())}</strong></div>` : ""}<div class="summary-line summary-total"><span>Total</span><strong id="checkout-total">${money(cartSubtotal() + deliveryFee(false) - discountAmount())}</strong></div><button class="button-primary" type="submit">Place demo order</button><p class="form-message">This creates a browser-local demo order. No restaurant receives it.</p></aside></form>`);
+}
+
+function renderConfirmation(id) {
+  const order = orders.find(item => item.id === id);
+  if (!order) return renderNotFound();
+  setTitle("Order confirmation");
+  return pageStart(`<section class="confirmation"><span class="success-mark">✓</span><span class="eyebrow">Order received · Demo</span><h1>Thanks, ${escapeHtml(order.name.split(" ")[0])}.</h1><p>Your sample order has been saved in this browser. It has not been sent to a kitchen or business.</p><span class="order-number">${escapeHtml(order.id)}</span><div class="confirmation-summary"><h2>Order details</h2><p>${order.items.map(item => `${item.quantity} × ${escapeHtml(item.name)}`).join("<br>")}</p><p>${escapeHtml(order.fulfilment)} · ${escapeHtml(order.payment)}</p><p><strong>${money(order.total)}</strong></p></div><a class="button-primary" href="#track/${encodeURIComponent(order.id)}">Track this demo order</a><a class="text-link" href="#menu">Order something else ↗</a></section>`);
+}
+
+function renderTracking(id) {
+  const order = orders.find(item => item.id === id);
+  if (!order) return pageStart(`<div class="empty-state"><h2>We couldn’t find that order</h2><p>Try an order placed in this browser.</p><a class="button-primary" href="#history">View order history</a></div>`);
+  setTitle("Order tracking");
+  const current = orderStatuses.indexOf(order.status);
+  return pageStart(`<div class="page-intro"><div class="breadcrumb"><a href="#history">Order history</a> / Track order</div><span class="eyebrow">Order ${escapeHtml(order.id)}</span><h1 class="page-title">${escapeHtml(order.status)}</h1><p>Status is stored in this browser demo. A real tracking timeline needs backend updates from the kitchen or delivery team.</p></div><section class="tracker" aria-label="Order progress">${orderStatuses.map((status, index) => `<div class="tracker-step ${index < current ? "done" : ""} ${index === current ? "current" : ""}"><span class="tracker-dot">${index < current ? "✓" : ""}</span><span>${escapeHtml(status)}</span></div>`).join("")}</section><div class="summary-box"><h2>Order details</h2>${order.items.map(item => `<div class="summary-line"><span>${item.quantity} × ${escapeHtml(item.name)}</span><strong>${money(item.price * item.quantity)}</strong></div>`).join("")}<div class="summary-line"><span>${escapeHtml(order.fulfilment)} · ${escapeHtml(order.payment)}</span><strong>${money(order.total)}</strong></div><div class="summary-line"><span>Placed</span><strong>${new Date(order.createdAt).toLocaleString()}</strong></div></div>`);
+}
+
+function renderAuth(isRegister = false, admin = false) {
+  setTitle(admin ? "Admin demo" : isRegister ? "Create a profile" : "Log in");
+  const title = admin ? "Admin demo" : isRegister ? "Set up a demo profile" : "Welcome back";
+  const description = admin ? "This dashboard is not protected. It is a browser-only interface demonstration, not a real admin account." : "Profile details are kept on this device only. Passwords are not stored or authenticated in this demo.";
+  return pageStart(`<section class="auth-wrap"><div class="auth-box"><span class="eyebrow">${admin ? "Admin preview" : "Chakula Hub"}</span><h1>${title}</h1><p>${description}</p><form class="auth-form" id="${admin ? "admin-form" : isRegister ? "register-form" : "login-form"}">${admin ? `<div class="notice">Never use real credentials here. There is no server-side authentication or admin authorization.</div><button class="button-primary">Open admin demo</button>` : `${isRegister ? `<div class="field"><label for="auth-name">Your name *</label><input id="auth-name" name="name" autocomplete="name" required minlength="2"></div>` : ""}<div class="field"><label for="auth-email">Email address *</label><input id="auth-email" name="email" type="email" autocomplete="email" required value="${escapeHtml(profile?.email || "")}"></div>${isRegister ? `<div class="field"><label for="auth-phone">Phone number</label><input id="auth-phone" name="phone" type="tel" autocomplete="tel" placeholder="+255 7XX XXX XXX"></div>` : `<p class="payment-note">Demo sign-in creates a local profile session using your email. It does not verify a password.</p>`}<button class="button-primary">${isRegister ? "Create demo profile" : "Continue with email"}</button>`}</form>${!admin ? `<p class="auth-switch">${isRegister ? `Already have a profile? <a href="#login">Log in</a>` : `New to Chakula Hub? <a href="#register">Create a profile</a>`}</p>` : ""}</div></section>`);
+}
+
+function renderProfile() {
+  setTitle("Your profile");
+  if (!profile) return `${pageStart(`<div class="empty-state"><h2>Log in to view your profile</h2><p>Your demo profile is stored on this device only.</p><a class="button-primary" href="#login">Continue with email</a></div>`)}`;
+  return pageStart(`<div class="page-intro"><span class="eyebrow">Your account</span><h1 class="page-title">Hello, ${escapeHtml(profile.name || profile.email.split("@")[0])}</h1><p>Local demo profile · Not a secure account.</p></div><div class="contact-grid"><form class="auth-box auth-form" id="profile-form"><h2>Profile details</h2><div class="field"><label for="profile-name">Name</label><input id="profile-name" name="name" value="${escapeHtml(profile.name || "")}" required></div><div class="field"><label for="profile-email">Email</label><input id="profile-email" type="email" name="email" value="${escapeHtml(profile.email)}" required></div><div class="field"><label for="profile-phone">Phone</label><input id="profile-phone" name="phone" value="${escapeHtml(profile.phone || "")}"></div><button class="button-primary">Save profile</button></form><div><div class="summary-box"><h2>Saved delivery address</h2><p class="payment-note">Addresses are stored with each local demo order. Saved-address management needs a secure customer account backend.</p><a class="text-link" href="#history">View order history ↗</a></div><p style="margin-top:14px"><button class="cart-remove" data-action="logout">Clear local profile</button></p></div></div>`);
+}
+
+function renderHistory() {
+  setTitle("Order history");
+  return pageStart(`<div class="page-intro"><span class="eyebrow">Your recent orders</span><h1 class="page-title">Order history</h1><p>Demo orders placed in this browser. They are not shared with a restaurant.</p></div>${orders.length ? `<div class="admin-panel"><table class="data-table"><thead><tr><th>Order</th><th>Placed</th><th>Items</th><th>Status</th><th>Total</th><th></th></tr></thead><tbody>${[...orders].reverse().map(order => `<tr><td><strong>${escapeHtml(order.id)}</strong></td><td>${new Date(order.createdAt).toLocaleDateString()}</td><td>${order.items.reduce((sum, item) => sum + item.quantity, 0)}</td><td>${escapeHtml(order.status)}</td><td>${money(order.total)}</td><td><a class="text-link" href="#track/${encodeURIComponent(order.id)}">Track</a> · <button data-reorder="${escapeHtml(order.id)}">Reorder</button></td></tr>`).join("")}</tbody></table></div>` : `<div class="empty-state"><h2>No orders yet</h2><p>Your demo order history will show up here.</p><a class="button-primary" href="#menu">Explore the menu</a></div>`}`);
+}
+
+function renderAbout() {
+  setTitle("About us");
+  return pageStart(`<div class="page-intro"><span class="eyebrow">Our story</span><h1 class="page-title">Good food brings us together.</h1><p>Chakula Hub is a demo brand imagining a simpler way to discover the flavours around us.</p></div><section class="about-grid"><img src="${imageUrl("photo-1555939594-58d7cb561ad1", 900)}" alt="Food prepared over an open grill" loading="lazy"><div><span class="eyebrow">Made for sharing</span><h2 class="page-title">Rooted here. Open to every craving.</h2><p>From a lively grill to a coastal curry, food tells the story of the people who make it. We’re building a place to celebrate those kitchens and make ordering feel easy.</p><p>This concept is not a live business. Vendor names, dishes, prices and delivery details shown in this demo are sample content.</p><a class="button-primary" href="#menu">Explore the sample menu</a></div></section>`);
+}
+
+function renderContact() {
+  setTitle("Contact us");
+  return pageStart(`<div class="page-intro"><span class="eyebrow">We’re listening</span><h1 class="page-title">Say hello.</h1><p>Questions about this demo? Send a note below. The message stays in this browser; no email is sent.</p></div><div class="contact-grid"><div><div class="contact-detail"><strong>Phone</strong><span>+255 700 000 000 · sample number</span></div><div class="contact-detail"><strong>Email</strong><span>hello@chakulahub.example</span></div><div class="contact-detail"><strong>Service area</strong><span>Dar es Salaam · sample coverage</span></div></div><form id="contact-form" class="auth-box auth-form"><div class="field"><label for="contact-name">Your name</label><input id="contact-name" name="name" required></div><div class="field"><label for="contact-email">Email address</label><input id="contact-email" name="email" type="email" required></div><div class="field"><label for="contact-message">Message</label><textarea id="contact-message" name="message" required></textarea></div><button class="button-primary">Save demo message</button><p class="form-message" id="contact-feedback" aria-live="polite"></p></form></div>`);
+}
+
+function demoOrders() {
+  if (!orders.length) return [{ id: "CH-DEMO-2401", name: "Sample Customer", phone: "+255 700 000 001", items: [{ name: "Nyama Choma Platter", quantity: 2, price: 18500 }], subtotal: 37000, total: 40500, status: "Preparing", fulfilment: "Delivery", payment: "Cash on Delivery", createdAt: new Date(Date.now() - 3600000).toISOString(), demo: true }, { id: "CH-DEMO-2402", name: "Sample Customer", phone: "+255 700 000 002", items: [{ name: "Zanzibar Beef Pilau", quantity: 1, price: 12500 }], subtotal: 12500, total: 16000, status: "Delivered", fulfilment: "Pickup", payment: "Pickup payment", createdAt: new Date(Date.now() - 86400000).toISOString(), demo: true }];
+  return orders;
+}
+function adminNav(active) { return `<aside class="admin-sidebar"><h2>Chakula Hub Admin</h2><nav>${[["admin-dashboard", "Overview"], ["admin-foods", "Food management"], ["admin-orders", "Order management"], ["admin-customers", "Customers"], ["admin-reports", "Sales reports"]].map(([path, label]) => `<a class="${active === path ? "active" : ""}" href="#${path}">${label}</a>`).join("")}</nav></aside>`; }
+function renderAdmin(path) {
+  setTitle("Admin demo");
+  const dataOrders = demoOrders();
+  const revenue = dataOrders.filter(order => order.status === "Delivered").reduce((sum, order) => sum + order.total, 0);
+  let content = "";
+  if (path === "admin-dashboard") content = `<h1>Overview</h1><p>Local demo data only. This is not a protected admin console.</p><div class="admin-stats"><div class="stat-card"><span>Sample orders</span><strong>${dataOrders.length}</strong></div><div class="stat-card"><span>Sample revenue</span><strong>${money(revenue)}</strong></div><div class="stat-card"><span>Demo customers</span><strong>${new Set(dataOrders.map(order => order.phone)).size}</strong></div><div class="stat-card"><span>Available meals</span><strong>${foods.filter(food => food.available).length}</strong></div></div><div class="admin-panel"><div class="panel-heading"><h2>Recent orders</h2><a href="#admin-orders" class="text-link">All orders ↗</a></div><table class="data-table"><thead><tr><th>Order</th><th>Customer</th><th>Time</th><th>Status</th><th>Total</th></tr></thead><tbody>${dataOrders.slice(0, 6).map(order => `<tr><td>${escapeHtml(order.id)}</td><td>${escapeHtml(order.name)}</td><td>${new Date(order.createdAt).toLocaleDateString()}</td><td>${escapeHtml(order.status)}</td><td>${money(order.total)}</td></tr>`).join("")}</tbody></table></div><div class="notice">Sample figures above are generated in your browser. Do not use them as real sales or customer data.</div>`;
+  if (path === "admin-foods") content = `<h1>Food management</h1><p>Add sample dishes to this browser’s menu. Real image uploads need a server or storage service.</p><div class="admin-panel"><div class="panel-heading"><h2>Add a dish</h2></div><form class="admin-form" id="food-form"><input name="name" placeholder="Dish name" required><input name="price" type="number" min="1" placeholder="Price (TZS)" required><select name="category"><option>Local favourites</option><option>Grills</option><option>Pizza & burgers</option><option>Seafood</option><option>Vegetarian</option><option>Drinks</option><option>Desserts</option></select><input name="description" placeholder="Short description" required><input name="time" type="number" min="1" placeholder="Prep time (minutes)" value="20" required><button>Add sample dish</button></form></div><div class="admin-panel"><table class="data-table"><thead><tr><th>Dish</th><th>Category</th><th>Price</th><th>Availability</th><th>Action</th></tr></thead><tbody>${foods.map(food => `<tr><td><span class="table-food"><img src="${imageUrl(food.image, 100)}" alt="">${escapeHtml(food.name)}</span></td><td>${escapeHtml(food.category)}</td><td>${money(food.price)}</td><td>${food.available ? "Available" : "Unavailable"}</td><td><button data-toggle-food="${food.id}">${food.available ? "Mark unavailable" : "Mark available"}</button></td></tr>`).join("")}</tbody></table></div>`;
+  if (path === "admin-orders") content = `<h1>Order management</h1><p>Change a local demo order status. Updates are visible on its tracking page in this browser.</p><div class="admin-panel"><table class="data-table"><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>Items</th><th>Status</th><th>Payment</th><th>Total</th></tr></thead><tbody>${dataOrders.map(order => `<tr><td>${escapeHtml(order.id)}</td><td>${escapeHtml(order.name)}</td><td>${escapeHtml(order.phone)}</td><td>${order.items.map(item => `${item.quantity}× ${escapeHtml(item.name)}`).join(", ")}</td><td>${order.demo ? escapeHtml(order.status) : `<select data-order-status="${escapeHtml(order.id)}">${orderStatuses.map(status => `<option ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select>`}</td><td>${escapeHtml(order.payment)}</td><td>${money(order.total)}</td></tr>`).join("")}</tbody></table></div>`;
+  if (path === "admin-customers") { const customers = [...new Map(dataOrders.map(order => [order.phone, order])).values()]; content = `<h1>Customers</h1><p>Only sample and current-browser orders are shown. No customer directory exists.</p><div class="admin-panel"><table class="data-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Orders</th><th>Last order</th></tr></thead><tbody>${customers.map(order => `<tr><td>${escapeHtml(order.name)}</td><td>${escapeHtml(order.phone)}</td><td>${escapeHtml(order.email || "Not provided")}</td><td>${dataOrders.filter(item => item.phone === order.phone).length}</td><td>${new Date(order.createdAt).toLocaleDateString()}</td></tr>`).join("")}</tbody></table></div>`; }
+  if (path === "admin-reports") content = `<h1>Sales reports</h1><p>Illustrative local totals based on sample and browser-local orders.</p><div class="admin-stats"><div class="stat-card"><span>Today · delivered</span><strong>${money(dataOrders.filter(order => order.status === "Delivered" && new Date(order.createdAt).toDateString() === new Date().toDateString()).reduce((sum, order) => sum + order.total, 0))}</strong></div><div class="stat-card"><span>This month · all statuses</span><strong>${money(dataOrders.filter(order => new Date(order.createdAt).getMonth() === new Date().getMonth()).reduce((sum, order) => sum + order.total, 0))}</strong></div><div class="stat-card"><span>Completed orders</span><strong>${dataOrders.filter(order => order.status === "Delivered").length}</strong></div><div class="stat-card"><span>Average order</span><strong>${money(dataOrders.length ? Math.round(dataOrders.reduce((sum, order) => sum + order.total, 0) / dataOrders.length) : 0)}</strong></div></div><div class="admin-panel"><div class="panel-heading"><h2>Orders included</h2><button data-action="export-orders">Export CSV</button></div><table class="data-table"><thead><tr><th>Order</th><th>Date</th><th>Status</th><th>Total</th></tr></thead><tbody>${dataOrders.map(order => `<tr><td>${escapeHtml(order.id)}</td><td>${new Date(order.createdAt).toLocaleDateString()}</td><td>${escapeHtml(order.status)}</td><td>${money(order.total)}</td></tr>`).join("")}</tbody></table></div>`;
+  return pageStart(`<div class="admin-shell">${adminNav(path)}<section class="admin-main"><div class="notice"><strong>Demo mode:</strong> Admin routes are not access-controlled. Data changes affect this browser only. Never use this as a live admin system.</div>${content}</section></div>`);
+}
+
+function renderNotFound() { setTitle("Not found"); return pageStart(`<div class="empty-state"><span class="eyebrow">404</span><h2>That page wandered off.</h2><p>Let’s find something good instead.</p><a class="button-primary" href="#home">Back to home</a></div>`); }
+function render() {
+  const current = route();
+  const segments = current.split("/");
+  const page = segments[0];
+  if (page === "home") app.innerHTML = renderHome();
+  else if (page === "menu") app.innerHTML = renderMenu();
+  else if (page === "food") app.innerHTML = renderDetail(segments[1]);
+  else if (page === "cart") app.innerHTML = renderCart();
+  else if (page === "checkout") app.innerHTML = renderCheckout();
+  else if (page === "confirmation") app.innerHTML = renderConfirmation(segments[1]);
+  else if (page === "track") app.innerHTML = renderTracking(segments[1]);
+  else if (page === "login") app.innerHTML = renderAuth();
+  else if (page === "register") app.innerHTML = renderAuth(true);
+  else if (page === "profile") app.innerHTML = renderProfile();
+  else if (page === "history") app.innerHTML = renderHistory();
+  else if (page === "about") app.innerHTML = renderAbout();
+  else if (page === "contact") app.innerHTML = renderContact();
+  else if (page === "admin-login") app.innerHTML = renderAuth(false, true);
+  else if (["admin-dashboard", "admin-foods", "admin-orders", "admin-customers", "admin-reports"].includes(page)) app.innerHTML = renderAdmin(page);
+  else app.innerHTML = renderNotFound();
+  document.querySelector("#main-nav").classList.remove("open");
+  document.querySelector("#mobile-menu").setAttribute("aria-expanded", "false");
+  document.querySelector("#cart-count").textContent = cartCount();
+  window.scrollTo(0, 0);
+}
+
+function rerenderMenu() { const results = document.querySelector("#menu-results"); if (results) { const items = filteredFoods(); results.innerHTML = foodGrid(items, "menu-food-grid"); document.querySelector(".menu-toolbar p").innerHTML = `<strong>${items.length}</strong> dishes to explore`; } }
+function createOrder(form) {
+  if (!cart.length) return toast("Your cart is empty.");
+  const data = new FormData(form);
+  const pickup = data.get("fulfilment") === "pickup";
+  const subtotal = cartSubtotal();
+  const fee = deliveryFee(pickup);
+  const order = { id: `CH-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`, name: data.get("name"), phone: data.get("phone"), email: data.get("email"), address: pickup ? "Pickup" : `${data.get("address")}, ${data.get("area")}`, instructions: data.get("instructions") || "", items: cart.map(item => ({ ...item })), subtotal, deliveryFee: fee, discount: discountAmount(), total: subtotal + fee - discountAmount(), status: "Order Received", fulfilment: pickup ? "Pickup" : "Delivery", payment: data.get("payment"), createdAt: new Date().toISOString() };
+  orders = [...orders, order]; setStore("ch-orders", orders);
+  profile = { name: order.name, phone: order.phone, email: order.email || "" }; setStore("ch-profile", profile);
+  cart = []; activeCoupon = ""; setStore("ch-coupon", ""); saveCart(); location.hash = `confirmation/${encodeURIComponent(order.id)}`;
+}
+
+document.addEventListener("click", event => {
+  const add = event.target.closest("[data-add]");
+  if (add) return addToCart(add.dataset.add);
+  const remove = event.target.closest("[data-remove]");
+  if (remove) { cart = cart.filter(item => item.key !== remove.dataset.remove); saveCart(); render(); return; }
+  const quantity = event.target.closest("[data-quantity]");
+  if (quantity) { const item = cart.find(row => row.key === quantity.dataset.quantity); if (item) item.quantity += Number(quantity.dataset.delta); cart = cart.filter(row => row.quantity > 0); saveCart(); render(); return; }
+  const toggle = event.target.closest("[data-toggle-food]");
+  if (toggle) { const food = findFood(toggle.dataset.toggleFood); food.available = !food.available; render(); return; }
+  const reorder = event.target.closest("[data-reorder]");
+  if (reorder) { const order = orders.find(item => item.id === reorder.dataset.reorder); order?.items.forEach(item => addToCart(item.id, item)); location.hash = "cart"; return; }
+  const status = event.target.closest("[data-order-status]");
+  if (status) { const order = orders.find(item => item.id === status.dataset.orderStatus); if (order) { order.status = status.value; setStore("ch-orders", orders); toast("Demo order status updated."); } }
+  const action = event.target.closest("[data-action]")?.dataset.action;
+  if (action === "clear-filters") { menuFilters = { search: "", category: "", maxPrice: 30000, minRating: 0, available: true, sort: "popular" }; render(); }
+  if (action === "checkout") { if (!cart.length) toast("Add a dish before checkout."); else location.hash = "checkout"; }
+  if (action === "apply-coupon") { const code = document.querySelector("#coupon-code")?.value.trim().toUpperCase(); if (code === "KARIBU10") { activeCoupon = code; setStore("ch-coupon", code); render(); toast("KARIBU10 applied."); } else { activeCoupon = ""; setStore("ch-coupon", ""); toast("That demo code isn’t recognised."); } }
+  if (action === "add-detail") { const food = findFood(event.target.dataset.food); const portion = document.querySelector("input[name=portion]:checked")?.value || "Regular"; const extras = [...document.querySelectorAll("input[name=extra]:checked")]; const extraPrice = extras.reduce((sum, input) => sum + Number(input.dataset.price), 0); const price = food.price + (portion === "Large" ? 4000 : 0) + extraPrice; addToCart(food.id, { portion, extras: extras.map(input => input.value), price, quantity: Number(document.querySelector("#detail-quantity").value), instructions: document.querySelector("#special-instructions").value.trim() }); }
+  if (action === "logout") { profile = null; localStorage.removeItem("ch-profile"); toast("Local profile cleared."); render(); }
+  if (action === "export-orders") exportOrders();
+});
+
+document.addEventListener("input", event => {
+  if (event.target.id === "menu-search") { menuFilters.search = event.target.value; rerenderMenu(); }
+  if (event.target.id === "price-filter") { menuFilters.maxPrice = Number(event.target.value); document.querySelector("#price-filter-label").textContent = money(menuFilters.maxPrice); rerenderMenu(); }
+});
+document.addEventListener("change", event => {
+  if (event.target.name === "category") { menuFilters.category = event.target.value; rerenderMenu(); }
+  if (event.target.name === "rating") { menuFilters.minRating = Number(event.target.value); rerenderMenu(); }
+  if (event.target.id === "availability-filter") { menuFilters.available = event.target.checked; rerenderMenu(); }
+  if (event.target.id === "sort-food") { menuFilters.sort = event.target.value; rerenderMenu(); }
+  if (event.target.name === "fulfilment") { const pickup = event.target.value === "pickup"; document.querySelector("#delivery-fields").hidden = pickup; document.querySelector("#delivery-address").required = !pickup; document.querySelector("#delivery-area").required = !pickup; document.querySelector("#checkout-delivery").textContent = money(deliveryFee(pickup)); document.querySelector("#checkout-total").textContent = money(cartSubtotal() + deliveryFee(pickup) - discountAmount()); }
+});
+
+document.addEventListener("submit", event => {
+  const form = event.target;
+  if (form.id === "hero-search") { event.preventDefault(); menuFilters.search = document.querySelector("#hero-query").value.trim(); location.hash = "menu"; }
+  if (form.id === "checkout-form") { event.preventDefault(); if (form.reportValidity()) createOrder(form); }
+  if (form.id === "login-form") { event.preventDefault(); const email = new FormData(form).get("email"); profile = { ...(profile || {}), email: String(email) }; setStore("ch-profile", profile); toast("Local demo profile ready."); location.hash = "profile"; }
+  if (form.id === "register-form") { event.preventDefault(); const data = new FormData(form); profile = { name: data.get("name"), email: data.get("email"), phone: data.get("phone") || "" }; setStore("ch-profile", profile); toast("Demo profile created on this device."); location.hash = "profile"; }
+  if (form.id === "admin-form") { event.preventDefault(); location.hash = "admin-dashboard"; }
+  if (form.id === "profile-form") { event.preventDefault(); const data = new FormData(form); profile = { name: data.get("name"), email: data.get("email"), phone: data.get("phone") }; setStore("ch-profile", profile); toast("Local profile updated."); render(); }
+  if (form.id === "food-form") { event.preventDefault(); const data = new FormData(form); const name = data.get("name"); foods.unshift({ id: `sample-${Date.now()}`, name, category: data.get("category"), price: Number(data.get("price")), rating: 0, time: Number(data.get("time")), popularity: 0, newest: 0, tag: "Demo item", available: true, description: data.get("description"), ingredients: "Sample item", image: "photo-1547592180-85f173990554" }); toast("Sample dish added for this session."); render(); }
+  if (form.id === "contact-form") { event.preventDefault(); form.reset(); document.querySelector("#contact-feedback").textContent = "Demo message noted in this browser. Nothing was emailed."; }
+  if (form.id === "newsletter-form") { event.preventDefault(); form.reset(); document.querySelector("#newsletter-message").textContent = "Thanks. This demo does not send or store emails."; }
+});
+
+function exportOrders() {
+  const rows = demoOrders();
+  const csv = ["Order,Customer,Phone,Status,Total,Date", ...rows.map(order => [order.id, order.name, order.phone, order.status, order.total, order.createdAt].map(value => `"${String(value).replaceAll('"', '""')}"`).join(","))].join("\n");
+  const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); link.download = "chakula-hub-demo-orders.csv"; link.click(); URL.revokeObjectURL(link.href);
+}
+
+document.querySelector("#mobile-menu").addEventListener("click", event => { const nav = document.querySelector("#main-nav"); const open = nav.classList.toggle("open"); event.currentTarget.setAttribute("aria-expanded", String(open)); });
+window.addEventListener("hashchange", render);
+saveCart();
+render();
